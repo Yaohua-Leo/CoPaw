@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import json
 import shutil
-from datetime import datetime
+from datetime import datetime, timezone
 from pathlib import Path
 
 from .base import BaseChatRepository
@@ -71,7 +71,7 @@ class JsonChatRepository(BaseChatRepository):
         shutil.move(str(tmp_path), str(self._path))
 
     def _make_backup_path(self) -> Path:
-        timestamp = datetime.now().strftime("%Y%m%d-%H%M%S")
+        timestamp = datetime.now(timezone.utc).strftime("%Y%m%d-%H%M%SZ")
         return self._path.with_name(f"{self._path.name}.backup-{timestamp}")
 
     def _backup_current_file(self) -> None:
