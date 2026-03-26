@@ -552,15 +552,33 @@ class FeishuChannel(BaseChannel):
             self._loop,
         )
 
-    def _on_reaction_created_sync(
-        self, data: "P2ImMessageReactionCreatedV1"
-    ) -> None:
-        logger.debug("feishu: received reaction created event, ignoring")
+    def _on_reaction_created_sync(self, data: "P2ImMessageReactionCreatedV1") -> None:
+        if not data or not getattr(data, "event", None):
+            return
+        event = data.event
+        message = getattr(event, "message", None)
+        message_id = getattr(message, "message_id", None) if message else None
+        user_open_id = getattr(getattr(event, "sender", None), "id", None)
+        logger.debug(
+            "feishu: received reaction created event, ignoring "
+            "(message_id=%s, user_open_id=%s)",
+            message_id,
+            user_open_id,
+        )
 
-    def _on_reaction_deleted_sync(
-        self, data: "P2ImMessageReactionDeletedV1"
-    ) -> None:
-        logger.debug("feishu: received reaction deleted event, ignoring")
+    def _on_reaction_deleted_sync(self, data: "P2ImMessageReactionDeletedV1") -> None:
+        if not data or not getattr(data, "event", None):
+            return
+        event = data.event
+        message = getattr(event, "message", None)
+        message_id = getattr(message, "message_id", None) if message else None
+        user_open_id = getattr(getattr(event, "sender", None), "id", None)
+        logger.debug(
+            "feishu: received reaction deleted event, ignoring "
+            "(message_id=%s, user_open_id=%s)",
+            message_id,
+            user_open_id,
+        )
 
     async def _on_message(self, data: "P2ImMessageReceiveV1") -> None:
         """Handle one Feishu message: dedup, parse, download media, enqueue."""
@@ -1878,12 +1896,8 @@ class FeishuChannel(BaseChannel):
                 self.verification_token,
             )
             .register_p2_im_message_receive_v1(self._on_message_sync)
-            .register_p2_im_message_reaction_created_v1(
-                self._on_reaction_created_sync
-            )
-            .register_p2_im_message_reaction_deleted_v1(
-                self._on_reaction_deleted_sync
-            )
+            .register_p2_im_message_reaction_created_v1(self._on_reaction_created_sync)
+            .register_p2_im_message_reaction_deleted_v1(self._on_reaction_deleted_sync)
             .build()
         )
         self._ws_client = lark.ws.Client(
